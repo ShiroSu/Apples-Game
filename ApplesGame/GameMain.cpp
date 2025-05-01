@@ -49,7 +49,6 @@ int main()
 	// Init apples
 	float applesX[NUM_APPLES];
 	float applesY[NUM_APPLES];
-	bool isAppleEaten[NUM_APPLES];
 	sf::CircleShape applesShapes[NUM_APPLES];
 
 	// placing apple to random spot
@@ -60,8 +59,6 @@ int main()
 		};
 
 	for (int i = 0; i < NUM_APPLES; i++) {
-		isAppleEaten[i] = false;
-
 		applesShapes[i].setRadius(APPLE_SIZE / 2.f);
 		applesShapes[i].setFillColor(sf::Color::Green);
 		applesShapes[i].setOrigin(APPLE_SIZE / 2.f, APPLE_SIZE / 2.f);
@@ -166,18 +163,16 @@ int main()
 		}
 
 		for (int i = 0; i < NUM_APPLES; i++) {
-			if (!isAppleEaten[i]) {
-				float squareDistance = (playerX - applesX[i]) * (playerX - applesX[i]) + (playerY - applesY[i]) * (playerY - applesY[i]);
-				float sqareRadiusSum = (APPLE_SIZE + PLAYER_SIZE) * (APPLE_SIZE + PLAYER_SIZE) / 4.f;
-				if (squareDistance < sqareRadiusSum) {
-					// Accelerate player
-					playerSpeed += ACCELERATION;
+			float squareDistance = (playerX - applesX[i]) * (playerX - applesX[i]) + (playerY - applesY[i]) * (playerY - applesY[i]);
+			float sqareRadiusSum = (APPLE_SIZE + PLAYER_SIZE) * (APPLE_SIZE + PLAYER_SIZE) / 4.f;
+			if (squareDistance < sqareRadiusSum) {
+				// Accelerate player
+				playerSpeed += ACCELERATION;
 
-					placeApple(i);
-					numEatenApples++;
+				placeApple(i);
+				numEatenApples++;
 
-					openedCountdownTillNextStone = lastShownStoneIndex < NUM_STONES - 1;
-				}
+				openedCountdownTillNextStone = lastShownStoneIndex < NUM_STONES - 1;
 			}
 		}
 
@@ -222,7 +217,7 @@ int main()
 			playerShape.setPosition(playerX, playerY);
 			window.draw(playerShape);
 			for (int i = 0; i < NUM_APPLES; i++) {
-				if (!isAppleEaten[i]) window.draw(applesShapes[i]);
+				window.draw(applesShapes[i]);
 			}
 			for (int i = 0; i < NUM_STONES; i++) {
 				if (isStoneShown[i]) window.draw(stonesShapes[i]);
