@@ -49,6 +49,25 @@ namespace ApplesGame {
 			ResetGame(game);
 		}
 
+		// Restart button handler
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
+			if (!game.ui.keyboardButtonStatus[sf::Keyboard::R]) {
+				game.ui.keyboardButtonStatus[sf::Keyboard::R] = true;
+				ResetGame(game);
+			}
+		}
+		else game.ui.keyboardButtonStatus[sf::Keyboard::R] = false;
+
+		// Mute button handler
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::M)) {
+			if (!game.ui.keyboardButtonStatus[sf::Keyboard::M]) {
+				game.ui.keyboardButtonStatus[sf::Keyboard::M] = true;
+				ChangeMuteStatus(game.ui);
+			}
+		}
+		else game.ui.keyboardButtonStatus[sf::Keyboard::M] = false;
+
+		// Player control buttons handler
 		if (
 			sf::Keyboard::isKeyPressed(sf::Keyboard::Right) ||
 			sf::Keyboard::isKeyPressed(sf::Keyboard::D)
@@ -74,20 +93,24 @@ namespace ApplesGame {
 			TurnPlayer(game.player, PlayerDirection::Down);
 		}
 
+		// Click event handler
 		if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
-			if (!game.ui.isMuteClicked) {
-				game.ui.isMuteClicked = true;
+			// Check if mouse is clicked because of using in loop
+			if (!game.ui.isMouseClicked) {
+				game.ui.isMouseClicked = true;
+
+				// Click on mute/unmute icon
 				const sf::Vector2i localPosition = sf::Mouse::getPosition(window);
 				sf::FloatRect spriteBounds = game.ui.muteStatusIconSprite.getLocalBounds();
 				const float rangeX[2] = { spriteBounds.left, spriteBounds.left + spriteBounds.width };
 				const float rangeY[2] = { spriteBounds.top, spriteBounds.top + spriteBounds.height };
 				if (
-					(float)rangeX[0] < localPosition.x < (float)rangeX[1] &&
-					(float)rangeY[0] < localPosition.y < (float)rangeY[1]
+					((float)rangeX[0] < localPosition.x && localPosition.x < (float)rangeX[1]) &&
+					((float)rangeY[0] < localPosition.y && localPosition.y < (float)rangeY[1])
 					) ChangeMuteStatus(game.ui);
 			}
 		}
-		else game.ui.isMuteClicked = false;
+		else game.ui.isMouseClicked = false;
 
 		// Change player position
 		MovePlayer(game.player, deltaTime);

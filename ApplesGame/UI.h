@@ -3,6 +3,7 @@
 #include <SFML/Audio.hpp>
 #include "Constants.h"
 #include "Math.h"
+#include <map>
 
 namespace ApplesGame {
 	struct UI {
@@ -20,7 +21,6 @@ namespace ApplesGame {
 		sf::Texture soundOnTexture;
 		sf::Texture soundOffTexture;
 		sf::Sprite muteStatusIconSprite;
-		sf::Sprite soundOffSprite;
 
 		// apples counter
 		sf::Text counterText;
@@ -29,7 +29,12 @@ namespace ApplesGame {
 
 		// Game mute status
 		bool isMute = false;
-		bool isMuteClicked = false;
+
+		bool isMouseClicked = false;
+		std::map<sf::Keyboard::Key, bool> keyboardButtonStatus = {
+			{ sf::Keyboard::M, false },
+			{ sf::Keyboard::R, false },
+		};
 	};
 
 	struct Game;
