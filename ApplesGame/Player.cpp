@@ -41,20 +41,23 @@ namespace ApplesGame {
 			break;
 		}
 	}
-	void MovePlayer(Player& player, const float deltaTime) {
-		if (!player.isMoving) return;
+	void MovePlayer(Player& player, const float deltaTime, const short selectedModes) {
 		switch (player.direction) {
 		case PlayerDirection::Right:
 			player.position.x += player.speed * deltaTime;
+			if (selectedModes & 1 << GameModes::OpenSpace && player.position.x >= SCREEN_WIDTH) player.position.x = 0;
 			break;
 		case PlayerDirection::Left:
 			player.position.x -= player.speed * deltaTime;
+			if (selectedModes & 1 << GameModes::OpenSpace && player.position.x <= 0) player.position.x = SCREEN_WIDTH;
 			break;
 		case PlayerDirection::Up:
 			player.position.y -= player.speed * deltaTime;
+			if (selectedModes & 1 << GameModes::OpenSpace && player.position.y <= 0) player.position.y = SCREEN_HEIGHT;
 			break;
 		case PlayerDirection::Down:
 			player.position.y += player.speed * deltaTime;
+			if (selectedModes & 1 << GameModes::OpenSpace && player.position.y >= SCREEN_HEIGHT) player.position.y = 0;
 			break;
 		}
 	}
@@ -70,6 +73,5 @@ namespace ApplesGame {
 		TurnPlayer(player, PlayerDirection::Right);
 		player.position = { SCREEN_WIDTH / 2.f, SCREEN_HEIGHT / 2.f };
 		player.sprite.setPosition(player.position.x, player.position.y);
-		player.isMoving = true;
 	}
 }

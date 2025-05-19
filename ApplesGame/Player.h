@@ -17,7 +17,7 @@ namespace ApplesGame {
 		float speed = INITIAL_SPEED;
 		PlayerDirection direction = PlayerDirection::Right;
 		sf::Sprite sprite;
-		bool isMoving = true;
+		bool isMoving = false;
 	};
 
 	struct Game;
@@ -26,7 +26,7 @@ namespace ApplesGame {
 	void InitPlayer(Player& player, const Game& game);
 	void DrawPlayer(Player& player, sf::RenderWindow& window);
 	void TurnPlayer(Player& player, const PlayerDirection direction);
-	void MovePlayer(Player& player, const float deltaTime);
+	void MovePlayer(Player& player, const float deltaTime, const short selectedModes);
 	bool IsPlayerCollideScreenBound(const Player & player);
 	void ResetPlayer(Player& player);
 }

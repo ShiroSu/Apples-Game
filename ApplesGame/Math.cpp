@@ -25,4 +25,17 @@ namespace ApplesGame {
 		const sf::FloatRect textBounds = text.getLocalBounds();
 		text.setOrigin(originX * textBounds.width, originY * textBounds.height);
 	}
+	bool isCirclesCollide(Position2D circle1Position, Position2D circle2Position, float circle1Radius, float circle2Radius) {
+		float circleDistance = (circle1Position.x - circle2Position.x) * (circle1Position.x - circle2Position.x) + (circle1Position.y - circle2Position.y) * (circle1Position.y - circle2Position.y);
+		float circleRadiusSum = (circle1Radius + circle2Radius) * (circle1Radius + circle2Radius) / 4.f;
+		return circleDistance < circleRadiusSum;
+	}
+	bool CheckClick(const sf::Vector2<int> mousePosition, const sf::Rect<float> elemRect) {
+		const float rangeX[2] = { elemRect.left, elemRect.left + elemRect.width };
+		const float rangeY[2] = { elemRect.top, elemRect.top + elemRect.height };
+		return (
+			((float)rangeX[0] < mousePosition.x && mousePosition.x < (float)rangeX[1]) &&
+			((float)rangeY[0] < mousePosition.y && mousePosition.y < (float)rangeY[1])
+			);
+	}
 }
