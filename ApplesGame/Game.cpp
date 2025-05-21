@@ -30,11 +30,16 @@ namespace ApplesGame {
 	void InitGameplay(Game& game) {
 		game.ui.gameState = GameStates::GamePlay;
 
-		game.ui.mainThemeMusic.setVolume(30.f); // change behaviour to variable
+		const int minApplesCount = game.selectedModes & 1 << GameModes::Infinite ? MIN_NUM_APPLES_INFINITE : MIN_NUM_APPLES_FINITE;
+		const int maxApplesCount = game.selectedModes & 1 << GameModes::Infinite ? MAX_NUM_APPLES_INFINITE : MAX_NUM_APPLES_FINITE;
+		game.numApples = minApplesCount + int(rand() / (float)RAND_MAX * (maxApplesCount - minApplesCount));
+
+		if (!game.ui.isMute)
+			game.ui.mainThemeMusic.setVolume(30.f); // change behaviour to variable
 
 		game.player.isMoving = true;
 
-		for (int i = 0; i < NUM_APPLES; i++) {
+		for (int i = 0; i < game.numApples; i++) {
 			InitApple(game.apples[i], game);
 		}
 		game.lastShownStoneIndex = -1;
@@ -65,11 +70,11 @@ namespace ApplesGame {
 		if (game.player.isMoving) {
 			MovePlayer(game.player, deltaTime, game.selectedModes);
 			// Eat apple check
-			for (int i = 0; i < NUM_APPLES; i++) {
+			for (int i = 0; i < game.numApples; i++) {
 				if (isCirclesCollide(game.apples[i].position, game.player.position, APPLE_SIZE, PLAYER_SIZE) &&
 					!game.apples[i].isEaten) {
 					EatApple(game.apples[i], game);
-					if (!(game.selectedModes & 1 << GameModes::Infinite) && game.ui.numEatenApples == NUM_APPLES) {
+					if (!(game.selectedModes & 1 << GameModes::Infinite) && game.ui.numEatenApples == game.numApples) {
 						game.ui.isGameWon = true;
 						SetGameOver(game);
 					}
@@ -99,8 +104,8 @@ namespace ApplesGame {
 		if (game.ui.gameState == GameStates::GamePlay) {
 			// Redraw scene
 			DrawPlayer(game.player, window);
-			for (int i = 0; i < NUM_APPLES; i++) {
-				if (!game.apples[i].isEaten) window.draw(game.apples[i].sprite);
+			for (int i = 0; i < game.numApples; i++) {
+				if (!game.apples[i].isEaten && game.apples[i].isVisible) window.draw(game.apples[i].sprite);
 			}
 			for (int i = 0; i < NUM_STONES; i++) {
 				if (game.stones[i].isShown || !(game.selectedModes & 1 << GameModes::Infinite)) window.draw(game.stones[i].sprite);
@@ -125,6 +130,10 @@ namespace ApplesGame {
 	}
 	void ResetGame(Game& game) {
 		if (game.ui.gameOverSound.getStatus() == sf::SoundSource::Playing) game.ui.gameOverSound.stop();
+
+		for (int i = 0; i < game.numApples; i++) {
+			game.apples[i].isVisible = false;
+		}
 
 		ResetUI(game.ui);
 		ResetPlayer(game.player);
@@ -162,8 +171,8 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Space]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Space] = true;
-				// Restart game on game over
-				if (game.ui.gameState == GameStates::GameOver) ResetGame(game);
+				if (game.ui.gameState == GameStates::GamePlay) PauseGame(game);
+				else if (game.ui.gameState == GameStates::GameOver) ResetGame(game); // Restart game on game over
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Space] = false;
@@ -206,24 +215,7 @@ namespace ApplesGame {
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Y] = false;
-		// "Num1" button handler
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1)) {
-			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Num1]) {
-				game.ui.keyboardButtonStatus[sf::Keyboard::Num1] = true;
-				// Mode select in menu (yes)
-				if (game.ui.gameState == GameStates::Menu) ChangeMenuState(game, true);
-			}
-		}
-		else game.ui.keyboardButtonStatus[sf::Keyboard::Num1] = false;
-		// "Numpad1" button handler
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Numpad1)) {
-			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Numpad1]) {
-				game.ui.keyboardButtonStatus[sf::Keyboard::Numpad1] = true;
-				// Mode select in menu (yes)
-				if (game.ui.gameState == GameStates::Menu) ChangeMenuState(game, true);
-			}
-		}
-		else game.ui.keyboardButtonStatus[sf::Keyboard::Numpad1] = false;
+
 		// "N" button handler
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::N)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::N]) {
@@ -233,6 +225,17 @@ namespace ApplesGame {
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::N] = false;
+
+		// "Num1" button handler
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1)) {
+			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Num1]) {
+				game.ui.keyboardButtonStatus[sf::Keyboard::Num1] = true;
+				// Mode select in menu (yes)
+				if (game.ui.gameState == GameStates::Menu) ChangeMenuState(game, true);
+			}
+		}
+		else game.ui.keyboardButtonStatus[sf::Keyboard::Num1] = false;
+
 		// "Num2" button handler
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Num2]) {
@@ -242,6 +245,17 @@ namespace ApplesGame {
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Num2] = false;
+
+		// "Numpad1" button handler
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Numpad1)) {
+			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Numpad1]) {
+				game.ui.keyboardButtonStatus[sf::Keyboard::Numpad1] = true;
+				// Mode select in menu (yes)
+				if (game.ui.gameState == GameStates::Menu) ChangeMenuState(game, true);
+			}
+		}
+		else game.ui.keyboardButtonStatus[sf::Keyboard::Numpad1] = false;
+
 		// "Numpad2" button handler
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Numpad2)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Numpad2]) {
@@ -252,25 +266,6 @@ namespace ApplesGame {
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Numpad2] = false;
 
-		// Player control buttons handler
-		// "Right arrow" button handler
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Right]) {
-				game.ui.keyboardButtonStatus[sf::Keyboard::Right] = true;
-				// Turn player right
-				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Right);
-			}
-		}
-		else game.ui.keyboardButtonStatus[sf::Keyboard::Right] = false;
-		// "D" button handler
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-			if (!game.ui.keyboardButtonStatus[sf::Keyboard::D]) {
-				game.ui.keyboardButtonStatus[sf::Keyboard::D] = true;
-				// Turn player right
-				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Right);
-			}
-		}
-		else game.ui.keyboardButtonStatus[sf::Keyboard::D] = false;
 		// "Up arrow" button handler
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Up]) {
@@ -280,15 +275,7 @@ namespace ApplesGame {
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Up] = false;
-		// "W" button handler
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-			if (!game.ui.keyboardButtonStatus[sf::Keyboard::W]) {
-				game.ui.keyboardButtonStatus[sf::Keyboard::W] = true;
-				// Turn player up
-				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Up);
-			}
-		}
-		else game.ui.keyboardButtonStatus[sf::Keyboard::W] = false;
+
 		// "Left arrow" button handler
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Left]) {
@@ -298,15 +285,7 @@ namespace ApplesGame {
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Left] = false;
-		// "A" button handler
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-			if (!game.ui.keyboardButtonStatus[sf::Keyboard::A]) {
-				game.ui.keyboardButtonStatus[sf::Keyboard::A] = true;
-				// Turn player left
-				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Left);
-			}
-		}
-		else game.ui.keyboardButtonStatus[sf::Keyboard::A] = false;
+
 		// "Down arrow" button handler
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Down]) {
@@ -316,6 +295,37 @@ namespace ApplesGame {
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Down] = false;
+
+		// "Right arrow" button handler
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Right]) {
+				game.ui.keyboardButtonStatus[sf::Keyboard::Right] = true;
+				// Turn player right
+				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Right);
+			}
+		}
+		else game.ui.keyboardButtonStatus[sf::Keyboard::Right] = false;
+
+		// "W" button handler
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+			if (!game.ui.keyboardButtonStatus[sf::Keyboard::W]) {
+				game.ui.keyboardButtonStatus[sf::Keyboard::W] = true;
+				// Turn player up
+				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Up);
+			}
+		}
+		else game.ui.keyboardButtonStatus[sf::Keyboard::W] = false;
+
+		// "A" button handler
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+			if (!game.ui.keyboardButtonStatus[sf::Keyboard::A]) {
+				game.ui.keyboardButtonStatus[sf::Keyboard::A] = true;
+				// Turn player left
+				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Left);
+			}
+		}
+		else game.ui.keyboardButtonStatus[sf::Keyboard::A] = false;
+
 		// "S" button handler
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::S]) {
@@ -325,6 +335,16 @@ namespace ApplesGame {
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::S] = false;
+
+		// "D" button handler
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+			if (!game.ui.keyboardButtonStatus[sf::Keyboard::D]) {
+				game.ui.keyboardButtonStatus[sf::Keyboard::D] = true;
+				// Turn player right
+				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Right);
+			}
+		}
+		else game.ui.keyboardButtonStatus[sf::Keyboard::D] = false;
 	}
 	void MouseClickHandler(Game& game, sf::RenderWindow& window) {
 		if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
@@ -356,5 +376,10 @@ namespace ApplesGame {
 			}
 		}
 		else game.ui.isMouseClicked = false;
+	}
+
+	void PauseGame(Game& game) {
+		game.isGamePaused = !game.isGamePaused;
+		game.player.isMoving = !game.player.isMoving;
 	}
 }

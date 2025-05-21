@@ -6,6 +6,7 @@
 
 namespace ApplesGame {
 	struct Apple {
+		bool isVisible = false;
 		bool isEaten = false;
 		Position2D position;
 		sf::Sprite sprite;
