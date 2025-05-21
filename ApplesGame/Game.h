@@ -8,6 +8,15 @@
 
 namespace ApplesGame {
 	struct Game {
+		bool isGamePaused = false;
+
+		bool openedCountdownTillNextStone = false; // need to limit showing stones when condition is met
+		int lastShownStoneIndex = -1;
+		int applesBeforeNextStone = 5 + int(rand() / (float)RAND_MAX * 10.f);
+
+		short selectedModes = 0;
+		float lastTime = 0.0f;
+
 		UI ui;
 		// player data
 		Player player;
@@ -16,16 +25,11 @@ namespace ApplesGame {
 		sf::Texture stoneTexture;
 
 		// apples data
-		Apple apples[NUM_APPLES];
+		int numApples = 0;
+		Apple apples[MAX_NUM_APPLES_FINITE];
 
 		// stones data
 		Stone stones[NUM_STONES];
-		int lastShownStoneIndex = -1;
-		int applesBeforeNextStone = 5 + int(rand() / (float)RAND_MAX * 10.f);
-		bool openedCountdownTillNextStone = false; // need to limit showing stones when condition is met
-
-		float lastTime = 0.0f;
-		short selectedModes = 0;
 	};
 
 	void InitGame(Game& game);
@@ -40,4 +44,5 @@ namespace ApplesGame {
 	void CloseGame(sf::RenderWindow& window);
 	void KeyboardButtonsPressHandler(Game& game, sf::RenderWindow& window);
 	void MouseClickHandler(Game& game, sf::RenderWindow& window);
+	void PauseGame(Game& game);
 }

@@ -13,6 +13,7 @@ namespace ApplesGame {
 		setSpriteOrigin(apple.sprite, 0.5f, 0.5f);
 		placeApple(apple);
 		apple.isEaten = false;
+		apple.isVisible = true;
 	}
 	void EatApple(Apple& apple, Game& game) {
 		RecalculateCounter(game.ui);

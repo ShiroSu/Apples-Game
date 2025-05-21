@@ -9,7 +9,10 @@ const float INITIAL_SPEED = 100.f;
 const float PLAYER_SIZE = 20.f;
 const float ACCELERATION = 10.f;
 
-const int NUM_APPLES = 20;
+const int MIN_NUM_APPLES_INFINITE = 20;
+const int MAX_NUM_APPLES_INFINITE = 40;
+const int MIN_NUM_APPLES_FINITE = 50;
+const int MAX_NUM_APPLES_FINITE = 80;
 const float APPLE_SIZE = 20.f;
 
 const int NUM_STONES = 10;

@@ -87,8 +87,10 @@ namespace ApplesGame {
 		if (ui.mainThemeMusic.getStatus() != sf::SoundSource::Playing) {
 			ui.mainThemeMusic.play();
 		}
-		if (ui.mainThemeMusic.getVolume() != 100.f)
-			ui.mainThemeMusic.setVolume(80.f); // change behaviour to variable
+		if (!ui.isMute) {
+			if (ui.mainThemeMusic.getVolume() != 80.f)
+				ui.mainThemeMusic.setVolume(80.f); // change behaviour to variable
+		}
 
 		switch (ui.menuState) {
 		case GameModes::Infinite:
