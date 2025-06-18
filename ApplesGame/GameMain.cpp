@@ -1,10 +1,7 @@
 ﻿// ©2023, XYZ School. All rights reserved.
 // Authored by Aleksandr Rybalka (polterageist@gmail.com)
 
-#include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
 #include "Game.h"
-#include <cassert>
 
 int main()
 {
@@ -18,23 +15,6 @@ int main()
 	sf::Clock gameClock;
 	// Init game
 	Game game;
-
-	// loading fonts
-	sf::Font font;
-	assert(font.loadFromFile(RESOURCES_PATH + "Fonts/Roboto-Medium.ttf"));
-
-	// Menu mode texts
-	game.ui.modeText.setFont(font);
-	game.ui.yesText.setFont(font);
-	game.ui.noText.setFont(font);
-	// Apples counter
-	game.ui.counterText.setFont(font);
-	// Game over text
-	game.ui.gameOverText.setFont(font);
-	// Gameover menu text
-	game.ui.gameOverMenuRestartText.setFont(font);
-	game.ui.gameOverMenuModeSelectText.setFont(font);
-	game.ui.gameOverMenuCloseText.setFont(font);
 
 	// Setting game settings
 	InitGame(game);

@@ -14,7 +14,6 @@ namespace ApplesGame {
 		int lastShownStoneIndex = -1;
 		int applesBeforeNextStone = 5 + int(rand() / (float)RAND_MAX * 10.f);
 
-		short selectedModes = 0;
 		float lastTime = 0.0f;
 
 		UI ui;
@@ -36,13 +35,15 @@ namespace ApplesGame {
 	void InitGameplay(Game& game);
 	void UpdateGame(Game& game, sf::RenderWindow& window, sf::Clock& gameClock);
 	void DrawGameScene(Game& game, sf::RenderWindow& window);
-	void ChangeMenuState(Game& game, const bool response);
 	void SetGameOver(Game& game);
 	void ResetGame(Game& game);
 	void ToMainMenu(Game& game);
+	void ToModeSelect(Game& game);
+	void ToControls(Game& game);
 	float RecalculateTime(Game& game, const sf::Clock & gameClock);
 	void CloseGame(sf::RenderWindow& window);
 	void KeyboardButtonsPressHandler(Game& game, sf::RenderWindow& window);
+	void MouseHoverHandler(Game& game, sf::RenderWindow& window);
 	void MouseClickHandler(Game& game, sf::RenderWindow& window);
 	void PauseGame(Game& game);
 }

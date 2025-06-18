@@ -18,9 +18,9 @@ namespace ApplesGame {
 	void EatApple(Apple& apple, Game& game) {
 		RecalculateCounter(game.ui);
 
-		if (game.selectedModes & 1 << GameModes::AccelWorld) game.player.speed += ACCELERATION;
+		if (game.ui.selectedModes & 1 << GameModes::AccelWorld) game.player.speed += ACCELERATION;
 
-		if (game.selectedModes & 1 << GameModes::Infinite) {
+		if (game.ui.selectedModes & 1 << GameModes::Infinite) {
 			game.openedCountdownTillNextStone = game.lastShownStoneIndex < NUM_STONES - 1;
 			placeApple(apple);
 		}

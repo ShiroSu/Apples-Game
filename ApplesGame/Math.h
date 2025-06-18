@@ -24,5 +24,8 @@ namespace ApplesGame {
 	void setTextOrigin(sf::Text& text, float desiredOriginX, float desiredOriginY);
 
 	bool isCirclesCollide(Position2D circle1Position, Position2D circle2Position, float circle1Radius, float circle2Radius);
-	bool CheckClick(const sf::Vector2<int> mousePosition, const sf::Rect<float> elemRect);
+	bool CheckPointerOnItem(const sf::Vector2<int> mousePosition, const sf::Rect<float> elemRect);
+
+	template <typename T>
+	T sortBy();
 }

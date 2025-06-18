@@ -30,8 +30,8 @@ namespace ApplesGame {
 	void InitGameplay(Game& game) {
 		game.ui.gameState = GameStates::GamePlay;
 
-		const int minApplesCount = game.selectedModes & 1 << GameModes::Infinite ? MIN_NUM_APPLES_INFINITE : MIN_NUM_APPLES_FINITE;
-		const int maxApplesCount = game.selectedModes & 1 << GameModes::Infinite ? MAX_NUM_APPLES_INFINITE : MAX_NUM_APPLES_FINITE;
+		const int minApplesCount = game.ui.selectedModes & 1 << GameModes::Infinite ? MIN_NUM_APPLES_INFINITE : MIN_NUM_APPLES_FINITE;
+		const int maxApplesCount = game.ui.selectedModes & 1 << GameModes::Infinite ? MAX_NUM_APPLES_INFINITE : MAX_NUM_APPLES_FINITE;
 		game.numApples = minApplesCount + int(rand() / (float)RAND_MAX * (maxApplesCount - minApplesCount));
 
 		if (!game.ui.isMute)
@@ -45,7 +45,7 @@ namespace ApplesGame {
 		game.lastShownStoneIndex = -1;
 		for (int i = 0; i < NUM_STONES; i++) {
 			InitStone(game.stones[i], game);
-			if (!(game.selectedModes & 1 << GameModes::Infinite)) ShowStone(game);
+			if (!(game.ui.selectedModes & 1 << GameModes::Infinite)) ShowStone(game);
 		}
 	}
 
@@ -63,18 +63,20 @@ namespace ApplesGame {
 
 		// Keyboard button press handler
 		KeyboardButtonsPressHandler(game, window);
+		// Mouse hover event handler
+		MouseHoverHandler(game, window);
 		// Click event handler
 		MouseClickHandler(game, window);
 
 		// Change player position
 		if (game.player.isMoving) {
-			MovePlayer(game.player, deltaTime, game.selectedModes);
+			MovePlayer(game.player, deltaTime, game.ui.selectedModes);
 			// Eat apple check
 			for (int i = 0; i < game.numApples; i++) {
 				if (isCirclesCollide(game.apples[i].position, game.player.position, APPLE_SIZE, PLAYER_SIZE) &&
 					!game.apples[i].isEaten) {
 					EatApple(game.apples[i], game);
-					if (!(game.selectedModes & 1 << GameModes::Infinite) && game.ui.numEatenApples == game.numApples) {
+					if (!(game.ui.selectedModes & 1 << GameModes::Infinite) && game.ui.numEatenApples == game.numApples) {
 						game.ui.isGameWon = true;
 						SetGameOver(game);
 					}
@@ -95,7 +97,7 @@ namespace ApplesGame {
 		}
 		// Check in bound
 		if (IsPlayerCollideScreenBound(game.player)) {
-			if (!(game.selectedModes & 1 << GameModes::OpenSpace)) SetGameOver(game);
+			if (!(game.ui.selectedModes & 1 << GameModes::OpenSpace)) SetGameOver(game);
 		}
 	}
 
@@ -108,16 +110,11 @@ namespace ApplesGame {
 				if (!game.apples[i].isEaten && game.apples[i].isVisible) window.draw(game.apples[i].sprite);
 			}
 			for (int i = 0; i < NUM_STONES; i++) {
-				if (game.stones[i].isShown || !(game.selectedModes & 1 << GameModes::Infinite)) window.draw(game.stones[i].sprite);
+				if (game.stones[i].isShown || !(game.ui.selectedModes & 1 << GameModes::Infinite)) window.draw(game.stones[i].sprite);
 			}
 		}
 		DrawUI(game.ui, window);
 		window.display();
-	}
-	void ChangeMenuState(Game& game, const bool response) {
-		const GameModes menuState = SelectMode(game.ui, response, game.selectedModes);
-		if (menuState == GameModes::End)
-			InitGameplay(game);
 	}
 	void SetGameOver(Game& game) {
 		if (game.ui.gameState == GameStates::GameOver) return;
@@ -141,11 +138,21 @@ namespace ApplesGame {
 	}
 	void ToMainMenu(Game& game) {
 		game.ui.menuState = GameModes::Infinite;
-		game.selectedModes = 0;
-		game.ui.gameState = GameStates::Menu;
+		game.ui.selectedModes = 0;
+		game.ui.gameState = GameStates::MainMenu;
 		ResetUI(game.ui);
 		ResetPlayer(game.player);
 		SetMainMenuUI(game.ui);
+	}
+	void ToModeSelect(Game& game) {
+		game.ui.menuState = GameModes::Infinite;
+		game.ui.selectedModes = 0;
+		game.ui.gameState = GameStates::ModeSelect;
+		ResetUI(game.ui);
+		ResetPlayer(game.player);
+		SetModeSelectUI(game.ui);
+	}
+	void ToControls(Game& game) {
 	}
 	float RecalculateTime(Game& game, const sf::Clock & gameClock) {
 		float currentTime = gameClock.getElapsedTime().asSeconds();
@@ -162,7 +169,8 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Escape]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Escape] = true;
-				CloseGame(window); // close game
+				if (game.ui.gameState == GameStates::ModeSelect) ToMainMenu(game);
+				else if (game.ui.gameState == GameStates::GameOver) ToMainMenu(game);
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Escape] = false;
@@ -171,8 +179,25 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Space]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Space] = true;
-				if (game.ui.gameState == GameStates::GamePlay) PauseGame(game);
-				else if (game.ui.gameState == GameStates::GameOver) ResetGame(game); // Restart game on game over
+				// Mode select menu action perform
+				if (game.ui.gameState == GameStates::ModeSelect) {
+					if (game.ui.modeMenu[0].isActive) {
+						SelectMode(game.ui, 0);
+					}
+					else if (game.ui.modeMenu[1].isActive) {
+						SelectMode(game.ui, 1);
+					}
+					else if (game.ui.modeMenu[2].isActive) {
+						SelectMode(game.ui, 2);
+					}
+					else if (game.ui.modeMenu[3].isActive) {
+						InitGameplay(game);
+						game.ui.modeMenu[3].isActive = false;
+					}
+					else {
+						SelectMode(game.ui, 0);
+					}
+				}
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Space] = false;
@@ -181,8 +206,55 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Enter]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Enter] = true;
+				// Main menu action perform
+				if (game.ui.gameState == GameStates::MainMenu) {
+					if (game.ui.mainMenu[0].isActive) {
+						ToModeSelect(game);
+						game.ui.mainMenu[0].isActive = false;
+					}
+					else if (game.ui.mainMenu[1].isActive) {
+						ToControls(game);
+						game.ui.mainMenu[1].isActive = false;
+					}
+					else if (game.ui.mainMenu[2].isActive) CloseGame(window);
+				}
+				// Mode select menu action perform
+				else if (game.ui.gameState == GameStates::ModeSelect) {
+					if (game.ui.modeMenu[0].isActive) {
+						SelectMode(game.ui, 0);
+					}
+					else if (game.ui.modeMenu[1].isActive) {
+						SelectMode(game.ui, 1);
+					}
+					else if (game.ui.modeMenu[2].isActive) {
+						SelectMode(game.ui, 2);
+					}
+					else if (game.ui.modeMenu[3].isActive) {
+						InitGameplay(game);
+						game.ui.modeMenu[3].isActive = false;
+					}
+					else {
+						SelectMode(game.ui, 0);
+					}
+				}
+				// Game over menu action perform
+				else if (game.ui.gameState == GameStates::GameOver) {
+					if (game.ui.gameOverMenu[0].isActive) {
+						ResetGame(game);
+						game.ui.gameOverMenu[0].isActive = false;
+					}
+					else if (game.ui.gameOverMenu[1].isActive) {
+						ToModeSelect(game);
+						game.ui.gameOverMenu[1].isActive = false;
+					}
+					else if (game.ui.gameOverMenu[2].isActive) {
+						ToMainMenu(game);
+						game.ui.gameOverMenu[2].isActive = false;
+					}
+					else if (game.ui.gameOverMenu[3].isActive) CloseGame(window);
+				}
 				// To main menu
-				if (game.ui.gameState == GameStates::GameOver) ToMainMenu(game);
+				else if (game.ui.gameState == GameStates::GameOver) ToMainMenu(game);
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Enter] = false;
@@ -210,8 +282,6 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Y]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Y] = true;
-				// Mode select in menu (yes)
-				if (game.ui.gameState == GameStates::Menu) ChangeMenuState(game, true);
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Y] = false;
@@ -220,8 +290,6 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::N)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::N]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::N] = true;
-				// Mode select in menu (no)
-				if (game.ui.gameState == GameStates::Menu) ChangeMenuState(game, false);
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::N] = false;
@@ -230,8 +298,6 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Num1]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Num1] = true;
-				// Mode select in menu (yes)
-				if (game.ui.gameState == GameStates::Menu) ChangeMenuState(game, true);
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Num1] = false;
@@ -240,8 +306,6 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Num2]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Num2] = true;
-				// Mode select in menu (no)
-				if (game.ui.gameState == GameStates::Menu) ChangeMenuState(game, false);
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Num2] = false;
@@ -250,8 +314,6 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Numpad1)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Numpad1]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Numpad1] = true;
-				// Mode select in menu (yes)
-				if (game.ui.gameState == GameStates::Menu) ChangeMenuState(game, true);
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Numpad1] = false;
@@ -260,8 +322,6 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Numpad2)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Numpad2]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Numpad2] = true;
-				// Mode select in menu (no)
-				if (game.ui.gameState == GameStates::Menu) ChangeMenuState(game, false);
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Numpad2] = false;
@@ -270,8 +330,61 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Up]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Up] = true;
+				// Main menu prev
+				if (game.ui.gameState == GameStates::MainMenu) {
+					if (game.ui.mainMenu[0].isActive) {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[2]);
+					}
+					/*else if (game.ui.mainMenu[1].isActive) {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+					}*/
+					else if (game.ui.mainMenu[2].isActive) {
+						// Change to this after "Controls page will be prepared"
+						//SetMainMenuItemActive(game.ui, game.ui.mainMenu[1]);
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+					}
+					else {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+					}
+				}
+				// Mode menu prev
+				else if (game.ui.gameState == GameStates::ModeSelect) {
+					if (game.ui.modeMenu[0].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[3]);
+					}
+					else if (game.ui.modeMenu[1].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[0]);
+					}
+					else if (game.ui.modeMenu[2].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[1]);
+					}
+					else if (game.ui.modeMenu[3].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[2]);
+					}
+					else {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[0]);
+					}
+				}
 				// Turn player up
-				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Up);
+				else if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Up);
+				// Game over menu prev
+				else if (game.ui.gameState == GameStates::GameOver) {
+					if (game.ui.gameOverMenu[0].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[3]);
+					}
+					else if (game.ui.gameOverMenu[1].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[0]);
+					}
+					else if (game.ui.gameOverMenu[2].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[1]);
+					}
+					else if (game.ui.gameOverMenu[3].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[2]);
+					}
+					else {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[0]);
+					}
+				}
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Up] = false;
@@ -290,8 +403,61 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::Down]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::Down] = true;
+				// Main menu next
+				if (game.ui.gameState == GameStates::MainMenu) {
+					if (game.ui.mainMenu[0].isActive) {
+						// Change to this after "Controls page will be prepared"
+						//SetMainMenuItemActive(game.ui, game.ui.mainMenu[1]);
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[2]);
+					}
+					/*else if (game.ui.mainMenu[1].isActive) {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[2]);
+					}*/
+					else if (game.ui.mainMenu[2].isActive) {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+					}
+					else {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+					}
+				}
+				// Mode menu next
+				else if (game.ui.gameState == GameStates::ModeSelect) {
+					if (game.ui.modeMenu[0].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[1]);
+					}
+					else if (game.ui.modeMenu[1].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[2]);
+					}
+					else if (game.ui.modeMenu[2].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[3]);
+					}
+					else if (game.ui.modeMenu[3].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[0]);
+					}
+					else {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[0]);
+					}
+				}
 				// Turn player down
-				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Down);
+				else if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Down);
+				// Game over menu next
+				else if (game.ui.gameState == GameStates::GameOver) {
+					if (game.ui.gameOverMenu[0].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[1]);
+					}
+					else if (game.ui.gameOverMenu[1].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[2]);
+					}
+					else if (game.ui.gameOverMenu[2].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[3]);
+					}
+					else if (game.ui.gameOverMenu[3].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[0]);
+					}
+					else {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[0]);
+					}
+				}
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::Down] = false;
@@ -310,8 +476,61 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::W]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::W] = true;
+				// Main menu prev
+				if (game.ui.gameState == GameStates::MainMenu) {
+					if (game.ui.mainMenu[0].isActive) {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[2]);
+					}
+					else if (game.ui.mainMenu[1].isActive) {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+					}
+					else if (game.ui.mainMenu[2].isActive) {
+						// Change to this after "Controls page will be prepared"
+						//SetMainMenuItemActive(game.ui, game.ui.mainMenu[1]);
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+					}
+					else {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+					}
+				}
+				// Mode menu prev
+				else if (game.ui.gameState == GameStates::ModeSelect) {
+					if (game.ui.modeMenu[0].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[3]);
+					}
+					else if (game.ui.modeMenu[1].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[0]);
+					}
+					else if (game.ui.modeMenu[2].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[1]);
+					}
+					else if (game.ui.modeMenu[3].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[2]);
+					}
+					else {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[0]);
+					}
+				}
 				// Turn player up
-				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Up);
+				else if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Up);
+				// Game over menu prev
+				else if (game.ui.gameState == GameStates::GameOver) {
+					if (game.ui.gameOverMenu[0].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[3]);
+					}
+					else if (game.ui.gameOverMenu[1].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[0]);
+					}
+					else if (game.ui.gameOverMenu[2].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[1]);
+					}
+					else if (game.ui.gameOverMenu[3].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[2]);
+					}
+					else {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[0]);
+					}
+				}
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::W] = false;
@@ -330,8 +549,61 @@ namespace ApplesGame {
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
 			if (!game.ui.keyboardButtonStatus[sf::Keyboard::S]) {
 				game.ui.keyboardButtonStatus[sf::Keyboard::S] = true;
+				// Main menu next
+				if (game.ui.gameState == GameStates::MainMenu) {
+					if (game.ui.mainMenu[0].isActive) {
+						// Change to this after "Controls page will be prepared"
+						//SetMainMenuItemActive(game.ui, game.ui.mainMenu[1]);
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[2]);
+					}
+					/*else if (game.ui.mainMenu[1].isActive) {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[2]);
+					}*/
+					else if (game.ui.mainMenu[2].isActive) {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+					}
+					else {
+						SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+					}
+				}
+				// Mode menu next
+				else if (game.ui.gameState == GameStates::ModeSelect) {
+					if (game.ui.modeMenu[0].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[1]);
+					}
+					else if (game.ui.modeMenu[1].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[2]);
+					}
+					else if (game.ui.modeMenu[2].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[3]);
+					}
+					else if (game.ui.modeMenu[3].isActive) {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[0]);
+					}
+					else {
+						SetModeMenuItemActive(game.ui, game.ui.modeMenu[0]);
+					}
+				}
 				// Turn player down
-				if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Down);
+				else if (game.ui.gameState == GameStates::GamePlay) TurnPlayer(game.player, PlayerDirection::Down);
+				// Game over menu next
+				else if (game.ui.gameState == GameStates::GameOver) {
+					if (game.ui.gameOverMenu[0].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[1]);
+					}
+					else if (game.ui.gameOverMenu[1].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[2]);
+					}
+					else if (game.ui.gameOverMenu[2].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[3]);
+					}
+					else if (game.ui.gameOverMenu[3].isActive) {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[0]);
+					}
+					else {
+						SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[0]);
+					}
+				}
 			}
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::S] = false;
@@ -346,6 +618,48 @@ namespace ApplesGame {
 		}
 		else game.ui.keyboardButtonStatus[sf::Keyboard::D] = false;
 	}
+	void MouseHoverHandler(Game& game, sf::RenderWindow& window) {
+		const sf::Vector2i localPosition = sf::Mouse::getPosition(window);
+		if (game.ui.gameState == GameStates::MainMenu) {
+			if (CheckPointerOnItem(localPosition, game.ui.mainMenu[0].text.getGlobalBounds()) && !game.ui.mainMenu[0].isActive) {
+				SetMainMenuItemActive(game.ui, game.ui.mainMenu[0]);
+			}
+			/*else if (CheckPointerOnItem(localPosition, game.ui.mainMenu[1].text.getGlobalBounds()) && !game.ui.mainMenu[1].isActive) {
+				SetMainMenuItemActive(game.ui, game.ui.mainMenu[1]);
+			}*/
+			else if (CheckPointerOnItem(localPosition, game.ui.mainMenu[2].text.getGlobalBounds()) && !game.ui.mainMenu[2].isActive) {
+				SetMainMenuItemActive(game.ui, game.ui.mainMenu[2]);
+			}
+		}
+		else if (game.ui.gameState == GameStates::ModeSelect) {
+			if (CheckPointerOnItem(localPosition, game.ui.modeMenu[0].text.getGlobalBounds()) && !game.ui.modeMenu[0].isActive) {
+				SetModeMenuItemActive(game.ui, game.ui.modeMenu[0]);
+			}
+			else if (CheckPointerOnItem(localPosition, game.ui.modeMenu[1].text.getGlobalBounds()) && !game.ui.modeMenu[1].isActive) {
+				SetModeMenuItemActive(game.ui, game.ui.modeMenu[1]);
+			}
+			else if (CheckPointerOnItem(localPosition, game.ui.modeMenu[2].text.getGlobalBounds()) && !game.ui.modeMenu[2].isActive) {
+				SetModeMenuItemActive(game.ui, game.ui.modeMenu[2]);
+			}
+			else if (CheckPointerOnItem(localPosition, game.ui.modeMenu[3].text.getGlobalBounds()) && !game.ui.modeMenu[3].isActive) {
+				SetModeMenuItemActive(game.ui, game.ui.modeMenu[3]);
+			}
+		}
+		if (game.ui.gameState == GameStates::GameOver) {
+			if (CheckPointerOnItem(localPosition, game.ui.gameOverMenu[0].text.getGlobalBounds()) && !game.ui.gameOverMenu[0].isActive) {
+				SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[0]);
+			}
+			else if (CheckPointerOnItem(localPosition, game.ui.gameOverMenu[1].text.getGlobalBounds()) && !game.ui.gameOverMenu[1].isActive) {
+				SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[1]);
+			}
+			else if (CheckPointerOnItem(localPosition, game.ui.gameOverMenu[2].text.getGlobalBounds()) && !game.ui.gameOverMenu[2].isActive) {
+				SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[2]);
+			}
+			else if (CheckPointerOnItem(localPosition, game.ui.gameOverMenu[3].text.getGlobalBounds()) && !game.ui.gameOverMenu[3].isActive) {
+				SetGameOverMenuItemActive(game.ui, game.ui.gameOverMenu[3]);
+			}
+		}
+	}
 	void MouseClickHandler(Game& game, sf::RenderWindow& window) {
 		if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
 			// Check if mouse is clicked because of using in loop
@@ -354,24 +668,53 @@ namespace ApplesGame {
 				const sf::Vector2i localPosition = sf::Mouse::getPosition(window);
 
 				// Click on mute/unmute icon
-				if (CheckClick(localPosition, game.ui.muteStatusIconSprite.getGlobalBounds())) ChangeMuteStatus(game.ui);
+				if (CheckPointerOnItem(localPosition, game.ui.muteStatusIconSprite.getGlobalBounds())) ChangeMuteStatus(game.ui);
 
+				// Main menu actions
+				if (game.ui.gameState == GameStates::MainMenu) {
+					if (game.ui.mainMenu[0].isActive) {
+						ToModeSelect(game);
+						game.ui.mainMenu[0].isActive = false;
+					}
+					else if (game.ui.mainMenu[1].isActive) {
+						ToControls(game);
+						game.ui.mainMenu[1].isActive = false;
+					}
+					else if (game.ui.mainMenu[2].isActive) {
+						CloseGame(window);
+					}
+				}
 				// Select game modes in menu
-				if (game.ui.gameState == GameStates::Menu) {
-					if (CheckClick(localPosition, game.ui.yesText.getGlobalBounds()))
-						ChangeMenuState(game, true);
-					if (CheckClick(localPosition, game.ui.noText.getGlobalBounds()))
-						ChangeMenuState(game, false);
+				if (game.ui.gameState == GameStates::ModeSelect) {
+					if (game.ui.modeMenu[0].isActive) {
+						SelectMode(game.ui, 0);
+					}
+					else if (game.ui.modeMenu[1].isActive) {
+						SelectMode(game.ui, 1);
+					}
+					else if (game.ui.modeMenu[2].isActive) {
+						SelectMode(game.ui, 2);
+					}
+					else if (game.ui.modeMenu[3].isActive) {
+						InitGameplay(game);
+						game.ui.modeMenu[3].isActive = false;
+					}
 				}
 				// Menu after game over
 				if (game.ui.gameState == GameStates::GameOver) {
-					if (CheckClick(localPosition, game.ui.gameOverMenuRestartText.getGlobalBounds())) {
+					if (game.ui.gameOverMenu[0].isActive) {
 						ResetGame(game);
+						game.ui.gameOverMenu[0].isActive = false;
 					}
-					if (CheckClick(localPosition, game.ui.gameOverMenuModeSelectText.getGlobalBounds())) {
+					else if (game.ui.gameOverMenu[1].isActive) {
+						ToModeSelect(game);
+						game.ui.gameOverMenu[1].isActive = false;
+					}
+					else if (game.ui.gameOverMenu[2].isActive) {
 						ToMainMenu(game);
+						game.ui.gameOverMenu[2].isActive = false;
 					}
-					if (CheckClick(localPosition, game.ui.gameOverMenuCloseText.getGlobalBounds())) window.close();
+					else if (game.ui.gameOverMenu[3].isActive) window.close();
 				}
 			}
 		}

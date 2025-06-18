@@ -30,7 +30,7 @@ namespace ApplesGame {
 		float circleRadiusSum = (circle1Radius + circle2Radius) * (circle1Radius + circle2Radius) / 4.f;
 		return circleDistance < circleRadiusSum;
 	}
-	bool CheckClick(const sf::Vector2<int> mousePosition, const sf::Rect<float> elemRect) {
+	bool CheckPointerOnItem(const sf::Vector2<int> mousePosition, const sf::Rect<float> elemRect) {
 		const float rangeX[2] = { elemRect.left, elemRect.left + elemRect.width };
 		const float rangeY[2] = { elemRect.top, elemRect.top + elemRect.height };
 		return (

@@ -9,7 +9,7 @@ namespace ApplesGame {
 		stone.isShown = true;
 	}
 	void InitStone(Stone& stone, const Game& game) {
-		stone.isShown = !bool(game.selectedModes & 1 << GameModes::Infinite);
+		stone.isShown = !bool(game.ui.selectedModes & 1 << GameModes::Infinite);
 		stone.sprite.setTexture(game.stoneTexture);
 		setSpriteSize(stone.sprite, STONE_SIZE);
 		setSpriteOrigin(stone.sprite, 0.5f, 0.5f);
@@ -19,7 +19,7 @@ namespace ApplesGame {
 			game.ui.numEatenApples % game.applesBeforeNextStone == 0);
 	}
 	void ShowStone(Game& game) {
-		if (game.selectedModes & 1 << GameModes::Infinite) {
+		if (game.ui.selectedModes & 1 << GameModes::Infinite) {
 			game.openedCountdownTillNextStone = false;
 			game.applesBeforeNextStone = 5 + int(rand() / (float)RAND_MAX * 10.f);
 		}
