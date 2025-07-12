@@ -5,6 +5,7 @@
 #include "Math.h"
 #include <map>
 #include <iostream>
+#include "Records.h"
 
 namespace ApplesGame {
 	enum class GameStates : int {
@@ -31,10 +32,11 @@ namespace ApplesGame {
 
 	struct UI {
 		bool isGameWon = false;
+		short selectedModes = 0;
+		int numEatenApples = 0;
+		float playTime = 0.f;
 		GameStates gameState = GameStates::MainMenu;
 		GameModes menuState = GameModes::Infinite;
-		int numEatenApples = 0;
-		short selectedModes = 0;
 
 		sf::Music mainThemeMusic;
 
@@ -60,7 +62,7 @@ namespace ApplesGame {
 		// game name
 		sf::Text gameNameText;
 		// apples counter
-		sf::Text counterText;
+		sf::Text userScoreText;
 
 		// main menu
 		sf::Text mainMenuPlayText;
@@ -152,8 +154,9 @@ namespace ApplesGame {
 	void SetUIFonts(UI& ui);
 	void SelectMode(UI& ui, const int modeIndex);
 	void RecalculateCounter(UI& ui);
-	void DrawUI(UI& ui, sf::RenderWindow& window);
+	void DrawUI(UI& ui, Records* recordsList, sf::RenderWindow& window);
 	void DrawModeSelectUI(UI& ui, sf::RenderWindow& window);
+	void DrawGameOverUI(UI& ui, Records* recordsList, sf::RenderWindow& window);
 	void SetMainMenuUI(UI& ui);
 	void SetModeSelectUI(UI& ui);
 	void SetGameOverUI(UI& ui);

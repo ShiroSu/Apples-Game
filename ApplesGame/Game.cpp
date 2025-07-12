@@ -26,6 +26,9 @@ namespace ApplesGame {
 		InitPlayer(game.player, game);
 
 		SetMainMenuUI(game.ui);
+		for (int i = 0; i < NUM_RECORDS - 1; i++) {
+			InitRecords(game.recordsList[i], i, game.selectedFakeNameIndices);
+		}
 	}
 	void InitGameplay(Game& game) {
 		game.ui.gameState = GameStates::GamePlay;
@@ -47,6 +50,11 @@ namespace ApplesGame {
 			InitStone(game.stones[i], game);
 			if (!(game.ui.selectedModes & 1 << GameModes::Infinite)) ShowStone(game);
 		}
+
+		if (game.ui.selectedModes & 1 << GameModes::Infinite) game.ui.userScoreText.setString("Score: " + std::to_string(game.ui.numEatenApples));
+		else game.ui.userScoreText.setString("Time: " + std::to_string(game.ui.playTime));
+
+		game.recordsList[NUM_RECORDS - 1] = { true, 0, 0.f, "Player" };
 	}
 
 	void UpdateGame(Game& game, sf::RenderWindow& window, sf::Clock& gameClock) {
@@ -70,6 +78,11 @@ namespace ApplesGame {
 
 		// Change player position
 		if (game.player.isMoving) {
+			game.ui.playTime += deltaTime;
+			if (game.ui.selectedModes ^ 1 << GameModes::Infinite) {
+				game.ui.userScoreText.setString("Time: " + GetNormalizedTime(game.ui.playTime));
+			}
+
 			MovePlayer(game.player, deltaTime, game.ui.selectedModes);
 			// Eat apple check
 			for (int i = 0; i < game.numApples; i++) {
@@ -113,16 +126,14 @@ namespace ApplesGame {
 				if (game.stones[i].isShown || !(game.ui.selectedModes & 1 << GameModes::Infinite)) window.draw(game.stones[i].sprite);
 			}
 		}
-		DrawUI(game.ui, window);
+		DrawUI(game.ui, game.recordsList, window);
 		window.display();
 	}
 	void SetGameOver(Game& game) {
 		if (game.ui.gameState == GameStates::GameOver) return;
 
-		if (game.ui.appleEatenSound.getStatus() == sf::SoundSource::Playing) game.ui.appleEatenSound.stop();
-		if (game.ui.isGameWon) game.ui.gameWonSound.play();
-		else game.ui.gameOverSound.play();
 		game.player.isMoving = false;
+		WriteMyRecord(game.recordsList, game.ui.numEatenApples, game.ui.playTime, game.ui.selectedModes & 1 << GameModes::Infinite ? SortByValue::Score : SortByValue::Time);
 		SetGameOverUI(game.ui);
 	}
 	void ResetGame(Game& game) {
@@ -158,6 +169,7 @@ namespace ApplesGame {
 		float currentTime = gameClock.getElapsedTime().asSeconds();
 		float deltaTime = currentTime - game.lastTime;
 		game.lastTime = currentTime;
+
 		return deltaTime;
 	}
 	void CloseGame(sf::RenderWindow& window) {

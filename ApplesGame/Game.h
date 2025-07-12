@@ -5,6 +5,7 @@
 #include "Apple.h"
 #include "Stone.h"
 #include "UI.h"
+#include "Records.h"
 
 namespace ApplesGame {
 	struct Game {
@@ -29,6 +30,10 @@ namespace ApplesGame {
 
 		// stones data
 		Stone stones[NUM_STONES];
+
+		// records
+		int selectedFakeNameIndices[NUM_RECORDS];
+		Records recordsList[NUM_RECORDS]; // = (Records*)malloc(sizeof(Records) * recordsNum);
 	};
 
 	void InitGame(Game& game);

@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 namespace sf {
 	class Sprite;
@@ -26,6 +27,5 @@ namespace ApplesGame {
 	bool isCirclesCollide(Position2D circle1Position, Position2D circle2Position, float circle1Radius, float circle2Radius);
 	bool CheckPointerOnItem(const sf::Vector2<int> mousePosition, const sf::Rect<float> elemRect);
 
-	template <typename T>
-	T sortBy();
+	std::string GetNormalizedTime(float time);
 }

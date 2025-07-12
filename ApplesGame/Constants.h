@@ -18,6 +18,8 @@ const float APPLE_SIZE = 20.f;
 const int NUM_STONES = 10;
 const float STONE_SIZE = 24.f;
 
+const float SOUND_ICON_SIZE = 25.f;
+
 const std::string GAME_NAME_TEXT = "Apples game";
 const std::string MAIN_MENU_PLAY_TEXT = "Start game";
 const std::string MAIN_MENU_CONTROLS_TEXT = "Controls";
@@ -37,5 +39,49 @@ const std::string GAME_OVER_MENU_RESTART_TEXT = "Play again";
 const std::string GAME_OVER_MENU_MODE_SELECT_TEXT = "To mode select";
 const std::string GAME_OVER_MENU_TO_MAIN_MENU_TEXT = "To main menu";
 const std::string GAME_OVER_MENU_CLOSE_TEXT = "Close";
-const float SOUND_ICON_SIZE = 25.f;
+
+const int NUM_RECORDS = 10;
+const int NAME_BASE_LENGTH = 40;
+const std::string FAKE_USERS_NAME[NAME_BASE_LENGTH] = {
+	"Adrienne",
+	"Leilah",
+	"Raffaela",
+	"Dolph",
+	"Layton",
+	"Charlotte",
+	"Brody",
+	"Mitya",
+	"Jocelyn",
+	"Connor",
+	"Roman",
+	"Jefferson",
+	"Denholm",
+	"Rosabel",
+	"Marusya",
+	"Osbourne",
+	"Bruce",
+	"Trudi",
+	"Illarion",
+	"Kane",
+	"Marianna",
+	"Luana",
+	"Kali",
+	"Victoire",
+	"Michelle",
+	"Marlène",
+	"Suzanne",
+	"Hewie",
+	"Bailee",
+	"Marilynn",
+	"Makar",
+	"Rosmarie",
+	"Mike",
+	"Agniya",
+	"Jochen",
+	"Millard",
+	"Boris",
+	"Roslyn",
+	"Marshall",
+	"Kristia",
+};
 }

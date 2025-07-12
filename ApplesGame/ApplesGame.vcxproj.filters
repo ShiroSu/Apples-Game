@@ -28,6 +28,9 @@
     <ClCompile Include="UI.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="Records.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Player.h">
@@ -49,6 +52,9 @@
       <Filter>Sources</Filter>
     </ClInclude>
     <ClInclude Include="UI.h">
+      <Filter>Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Records.h">
       <Filter>Sources</Filter>
     </ClInclude>
   </ItemGroup>

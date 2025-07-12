@@ -38,4 +38,8 @@ namespace ApplesGame {
 			((float)rangeY[0] < mousePosition.y && mousePosition.y < (float)rangeY[1])
 			);
 	}
+	std::string GetNormalizedTime(float time) {
+		std::string normalizedTimeString = std::to_string((int)time / 60) + ":" + ((int)time % 60 < 10 ? "0" : "") + std::to_string((int)time % 60);
+		return normalizedTimeString;
+	}
 }

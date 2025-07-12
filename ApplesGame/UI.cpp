@@ -40,12 +40,11 @@ namespace ApplesGame {
 		ui.noText.setPosition(SCREEN_WIDTH / 2.f + 130, 2.f * SCREEN_HEIGHT / 3.f);
 
 		// Apples counter
-		ui.counterText.setFont(ui.font);
-		ui.counterText.setCharacterSize(16);
-		ui.counterText.setFillColor(sf::Color::White);
-		ui.counterText.setPosition(10, 10);
-		ui.counterText.setString(("Score: " + std::to_string(ui.numEatenApples)).c_str());
-
+		ui.userScoreText.setFont(ui.font);
+		ui.userScoreText.setCharacterSize(16);
+		ui.userScoreText.setFillColor(sf::Color::White);
+		ui.userScoreText.setPosition(10, 10);
+		ui.userScoreText.setString(("Score: " + std::to_string(ui.numEatenApples)).c_str());
 	}
 	void InitMainMenuUI(UI& ui) {
 		// Game name
@@ -221,7 +220,7 @@ namespace ApplesGame {
 		ui.yesText.setFont(ui.font);
 		ui.noText.setFont(ui.font);
 		// Apples counter
-		ui.counterText.setFont(ui.font);
+		ui.userScoreText.setFont(ui.font);
 		// Game over text
 		ui.gameOverText.setFont(ui.font);
 		// Gameover menu text
@@ -236,9 +235,10 @@ namespace ApplesGame {
 	}
 	void RecalculateCounter(UI& ui) {
 		ui.numEatenApples++;
-		ui.counterText.setString(("Score: " + std::to_string(ui.numEatenApples)).c_str()); // update score counter
+		if (ui.selectedModes & 1 << GameModes::Infinite)
+			ui.userScoreText.setString("Score: " + std::to_string(ui.numEatenApples)); // update score counter
 	}
-	void DrawUI(UI& ui, sf::RenderWindow& window) {
+	void DrawUI(UI& ui, Records* recordsList, sf::RenderWindow& window) {
 		switch (ui.gameState) {
 			case GameStates::MainMenu:
 				window.draw(ui.gameNameText);
@@ -254,16 +254,10 @@ namespace ApplesGame {
 				break;
 			}
 			case GameStates::GamePlay:
-				window.draw(ui.counterText);
+				window.draw(ui.userScoreText);
 				break;
 			case GameStates::GameOver:
-				if (!ui.isGameWon) window.draw(ui.counterText);
-				window.draw(ui.gameOverText);
-				for (auto item = std::begin(ui.gameOverMenu); item < std::end(ui.gameOverMenu); item++) {
-					if (item->isActive) item->text.setFillColor(sf::Color::Red);
-					else item->text.setFillColor(sf::Color::White);
-					window.draw(item->text);
-				}
+				DrawGameOverUI(ui, recordsList, window);
 				break;
 		}
 
@@ -288,6 +282,45 @@ namespace ApplesGame {
 			}
 		}
 	}
+	void DrawGameOverUI(UI& ui, Records* recordsList, sf::RenderWindow& window) {
+		//if (!ui.isGameWon) window.draw(ui.userScoreText);
+		window.draw(ui.gameOverText);
+
+		// records
+		const float rowGap = 30.f;
+		for (int i = 0; i < NUM_RECORDS; i++) {
+			const Position2D nameTextPosition = { float(i / (NUM_RECORDS / 2)) * SCREEN_WIDTH / 2.f + 20.f, float(i % (NUM_RECORDS / 2)) * rowGap + ui.gameOverText.getPosition().y + 70.f};
+			sf::Text nameText;
+			nameText.setFont(ui.font);
+			nameText.setCharacterSize(20);
+			nameText.setString(std::to_string(i + 1) + ". " + recordsList[i].userName);
+			nameText.setFillColor(recordsList[i].isMe ? sf::Color::Green : sf::Color::White);
+			nameText.setPosition(nameTextPosition.x, nameTextPosition.y);
+
+			const Position2D valueTextPosition = { nameTextPosition.x + SCREEN_WIDTH / 2.f - 70.f, nameTextPosition.y };
+			sf::Text valueText;
+			valueText.setFont(ui.font);
+			valueText.setCharacterSize(20);
+			if (ui.selectedModes & 1 << GameModes::Infinite) valueText.setString(std::to_string(recordsList[i].userScore));
+			else valueText.setString(GetNormalizedTime(recordsList[i].userTime));
+			valueText.setFillColor(recordsList[i].isMe ? sf::Color::Green : sf::Color::White);
+			valueText.setPosition(valueTextPosition.x, valueTextPosition.y);
+
+			window.draw(nameText);
+			window.draw(valueText);
+		}
+		sf::RectangleShape separator;
+		separator.setOutlineColor(sf::Color::White);
+		separator.setSize(sf::Vector2f(2.f, rowGap * float(NUM_RECORDS / 2)));
+		separator.setPosition(SCREEN_WIDTH / 2.f, ui.gameOverText.getPosition().y + 70.f);
+		window.draw(separator);
+
+		for (auto item = std::begin(ui.gameOverMenu); item < std::end(ui.gameOverMenu); item++) {
+			if (item->isActive) item->text.setFillColor(sf::Color::Red);
+			else item->text.setFillColor(sf::Color::White);
+			window.draw(item->text);
+		}
+	}
 	void SetMainMenuUI(UI& ui) {
 		if (ui.mainThemeMusic.getStatus() != sf::SoundSource::Playing) {
 			ui.mainThemeMusic.play();
@@ -308,22 +341,24 @@ namespace ApplesGame {
 	}
 	void SetGameOverUI(UI& ui) {
 		ui.gameState = GameStates::GameOver;
+		if (ui.appleEatenSound.getStatus() == sf::SoundSource::Playing) ui.appleEatenSound.stop();
+		if (ui.isGameWon) ui.gameWonSound.play();
+		else ui.gameOverSound.play();
 
 		if (ui.isGameWon) ui.gameOverText.setString(GAME_WON_TEXT);
 		else ui.gameOverText.setString(GAME_OVER_TEXT);
 
 		ui.gameOverText.setOrigin(ui.gameOverText.getLocalBounds().width / 2.f, ui.gameOverText.getLocalBounds().height);
-		ui.gameOverText.setPosition(SCREEN_WIDTH / 2.f, SCREEN_HEIGHT / 2.f);
-
-		ui.counterText.setCharacterSize(20);
-		ui.counterText.setPosition(SCREEN_WIDTH / 2.f - ui.counterText.getGlobalBounds().width / 2.f, ui.gameOverText.getGlobalBounds().top + ui.gameOverText.getGlobalBounds().height + 10);
+		ui.gameOverText.setPosition(SCREEN_WIDTH / 2.f, 60.f);
 	}
 	void ResetUI(UI& ui) {
 		ui.isGameWon = false;
 		ui.numEatenApples = 0;
-		ui.counterText.setPosition(10, 10);
-		ui.counterText.setCharacterSize(16);
-		ui.counterText.setString(("Score: " + std::to_string(ui.numEatenApples)).c_str());
+		ui.playTime = 0.f;
+		ui.userScoreText.setPosition(10, 10);
+		ui.userScoreText.setCharacterSize(16);
+		if (ui.selectedModes & 1 << GameModes::Infinite) ui.userScoreText.setString(("Score: " + std::to_string(ui.numEatenApples)).c_str());
+		else ui.userScoreText.setString("Time: " + GetNormalizedTime(ui.playTime));
 	}
 	void ChangeMuteStatus(UI& ui) {
 		ui.isMute = !ui.isMute;
